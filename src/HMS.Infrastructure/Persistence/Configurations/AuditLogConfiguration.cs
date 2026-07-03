@@ -1,0 +1,23 @@
+using HMS.Domain.Entities;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Metadata.Builders;
+
+namespace HMS.Infrastructure.Persistence.Configurations;
+
+public class AuditLogConfiguration : IEntityTypeConfiguration<AuditLog>
+{
+    public void Configure(EntityTypeBuilder<AuditLog> builder)
+    {
+        builder.ToTable("AuditLogs");
+
+        builder.HasKey(a => a.Id);
+
+        builder.Property(a => a.Action)
+            .IsRequired()
+            .HasMaxLength(100);
+
+        builder.Property(a => a.EntityName)
+            .IsRequired()
+            .HasMaxLength(100);
+    }
+}

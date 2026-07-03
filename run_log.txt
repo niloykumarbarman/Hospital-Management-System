@@ -1,0 +1,7 @@
+Using launch settings from src\HMS.API\Properties\launchSettings.json...
+Building...
+[21:39:14 INF] User profile is available. Using 'C:\Users\UseR\AppData\Local\ASP.NET\DataProtection-Keys' as key repository and Windows DPAPI to encrypt keys at rest.
+[21:39:14 INF] Now listening on: http://localhost:5004
+[21:39:14 INF] Application started. Press Ctrl+C to shut down.
+[21:39:14 INF] Hosting environment: Development
+[21:39:14 INF] Content root path: E:\PROJECT\HMS\src\HMS.API
