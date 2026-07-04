@@ -203,7 +203,6 @@ Current status: 57 tests, 0 failed.
 - Windows/Git Bash file uploads: `curl -F "file=@..."` with an MSYS-style path (`/e/...`) fails silently with "curl: (26) Failed to open/read local data from file/application". Use the native Windows path format instead (e.g. `E:/HMS_DB_Backups/file.bak`).
 - Soft-delete + unique indexes: fields like PatientCode, Doctor.UserId, and InvoiceNumber require `IgnoreQueryFilters` in relevant queries to correctly handle uniqueness against soft-deleted records.
 - File locks during rebuild: if `dotnet run` is active, a subsequent `dotnet build`/`dotnet run` will fail with a file lock error. Stop the running process first.
-- EF data integrity warning: Medicine entity has a soft-delete global query filter, while PrescriptionItem has a required relationship to it — `dotnet ef` commands emit a warning (does not crash; optional fix pending).
 
 ## Roadmap
 
@@ -213,8 +212,8 @@ Current status: 57 tests, 0 failed.
 - [x] Database backup and restore
 - [x] React/Next.js frontend (all 9 modules)
 - [x] Dashboard with live stats, recent activity, and quick actions
+- [x] Resolve EF soft-delete query filter warning (added matching filter on PrescriptionItem)
 - [ ] Role-based UI restriction (hide/show actions per role on the frontend)
-- [ ] Resolve EF soft-delete query filter warning
 
 ## Author
 

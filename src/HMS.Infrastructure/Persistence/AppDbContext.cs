@@ -49,6 +49,7 @@ public class AppDbContext : DbContext
         modelBuilder.Entity<Appointment>().HasQueryFilter(e => !e.IsDeleted);
         modelBuilder.Entity<MedicalRecord>().HasQueryFilter(e => !e.IsDeleted);
         modelBuilder.Entity<Prescription>().HasQueryFilter(e => !e.IsDeleted);
+        modelBuilder.Entity<PrescriptionItem>().HasQueryFilter(e => !e.IsDeleted && !e.Prescription.IsDeleted && !e.Medicine.IsDeleted);
         modelBuilder.Entity<Medicine>().HasQueryFilter(e => !e.IsDeleted);
         modelBuilder.Entity<LabTest>().HasQueryFilter(e => !e.IsDeleted);
         modelBuilder.Entity<Invoice>().HasQueryFilter(e => !e.IsDeleted);
