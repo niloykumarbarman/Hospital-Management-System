@@ -8,6 +8,8 @@ import Input from "@/components/ui/Input";
 import DoctorFormModal from "@/components/doctors/DoctorFormModal";
 import { DoctorDto } from "@/types/doctor";
 import { getDoctors, deleteDoctor } from "@/lib/doctors";
+import { useAuth } from "@/context/AuthContext";
+import { canCreate, canEdit, canDelete } from "@/lib/permissions";
 
 export default function DoctorsPage() {
   const [doctors, setDoctors] = useState<DoctorDto[]>([]);
@@ -19,6 +21,10 @@ export default function DoctorsPage() {
   const [editingDoctor, setEditingDoctor] = useState<DoctorDto | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<DoctorDto | null>(null);
   const [deleting, setDeleting] = useState(false);
+  const { user } = useAuth();
+  const allowCreate = canCreate(user?.role, "Doctor");
+  const allowEdit = canEdit(user?.role, "Doctor");
+  const allowDelete = canDelete(user?.role, "Doctor");
 
   useEffect(() => {
     const t = setTimeout(() => setDebouncedSearch(search), 300);
@@ -83,15 +89,17 @@ export default function DoctorsPage() {
             Manage doctor profiles and schedules
           </p>
         </div>
-        <Button
-          onClick={() => {
-            setEditingDoctor(null);
-            setModalOpen(true);
-          }}
-        >
-          <Plus size={16} className="mr-2" />
-          Add Doctor
-        </Button>
+        {allowCreate && (
+          <Button
+            onClick={() => {
+              setEditingDoctor(null);
+              setModalOpen(true);
+            }}
+          >
+            <Plus size={16} className="mr-2" />
+            Add Doctor
+          </Button>
+        )}
       </div>
 
       <div className="relative animate-fade-in-up" style={{ animationDelay: "40ms" }}>
@@ -134,7 +142,7 @@ export default function DoctorsPage() {
               ? "Add your first doctor to start building your records."
               : "Try a different search term."}
           </p>
-          {doctors.length === 0 && (
+          {doctors.length === 0 && allowCreate && (
             <Button
               className="mt-5"
               onClick={() => {
@@ -165,23 +173,27 @@ export default function DoctorsPage() {
                   </p>
                 </div>
                 <div className="flex items-center gap-1">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setEditingDoctor(doctor);
-                      setModalOpen(true);
-                    }}
-                    className="focus-ring h-8 w-8 flex items-center justify-center rounded-lg text-[var(--foreground-muted)] hover:text-[var(--foreground)] hover:bg-white/5 transition-colors duration-200"
-                  >
-                    <Pencil size={15} />
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setDeleteTarget(doctor)}
-                    className="focus-ring h-8 w-8 flex items-center justify-center rounded-lg text-[var(--foreground-muted)] hover:text-[var(--danger)] hover:bg-white/5 transition-colors duration-200"
-                  >
-                    <Trash2 size={15} />
-                  </button>
+                  {allowEdit && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setEditingDoctor(doctor);
+                        setModalOpen(true);
+                      }}
+                      className="focus-ring h-8 w-8 flex items-center justify-center rounded-lg text-[var(--foreground-muted)] hover:text-[var(--foreground)] hover:bg-white/5 transition-colors duration-200"
+                    >
+                      <Pencil size={15} />
+                    </button>
+                  )}
+                  {allowDelete && (
+                    <button
+                      type="button"
+                      onClick={() => setDeleteTarget(doctor)}
+                      className="focus-ring h-8 w-8 flex items-center justify-center rounded-lg text-[var(--foreground-muted)] hover:text-[var(--danger)] hover:bg-white/5 transition-colors duration-200"
+                    >
+                      <Trash2 size={15} />
+                    </button>
+                  )}
                 </div>
               </div>
 
