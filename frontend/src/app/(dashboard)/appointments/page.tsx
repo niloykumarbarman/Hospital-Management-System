@@ -12,6 +12,8 @@ import {
   AppointmentDto,
 } from "@/types/appointment";
 import { getAppointments, deleteAppointment } from "@/lib/appointments";
+import { useAuth } from "@/context/AuthContext";
+import { canCreate, canEdit, canDelete } from "@/lib/permissions";
 
 const STATUS_BADGE_CLASS: Record<AppointmentStatus, string> = {
   [AppointmentStatus.Pending]: "text-[var(--warning)] bg-[var(--warning)]/10",
@@ -32,6 +34,10 @@ export default function AppointmentsPage() {
   const [editingAppointment, setEditingAppointment] = useState<AppointmentDto | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<AppointmentDto | null>(null);
   const [deleting, setDeleting] = useState(false);
+  const { user } = useAuth();
+  const allowCreate = canCreate(user?.role, "Appointment");
+  const allowEdit = canEdit(user?.role, "Appointment");
+  const allowDelete = canDelete(user?.role, "Appointment");
 
   useEffect(() => {
     const t = setTimeout(() => setDebouncedSearch(search), 300);
@@ -96,15 +102,17 @@ export default function AppointmentsPage() {
             Schedule and manage patient appointments
           </p>
         </div>
-        <Button
-          onClick={() => {
-            setEditingAppointment(null);
-            setModalOpen(true);
-          }}
-        >
-          <Plus size={16} className="mr-2" />
-          Book Appointment
-        </Button>
+        {allowCreate && (
+          <Button
+            onClick={() => {
+              setEditingAppointment(null);
+              setModalOpen(true);
+            }}
+          >
+            <Plus size={16} className="mr-2" />
+            Book Appointment
+          </Button>
+        )}
       </div>
 
       <div
@@ -152,7 +160,7 @@ export default function AppointmentsPage() {
               ? "Book your first appointment to get started."
               : "Try a different search term."}
           </p>
-          {appointments.length === 0 && (
+          {appointments.length === 0 && allowCreate && (
             <Button
               className="mt-5"
               onClick={() => {
@@ -213,23 +221,27 @@ export default function AppointmentsPage() {
                   </td>
                   <td className="px-4 py-3">
                     <div className="flex items-center justify-end gap-1">
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setEditingAppointment(a);
-                          setModalOpen(true);
-                        }}
-                        className="focus-ring h-8 w-8 flex items-center justify-center rounded-lg text-[var(--foreground-muted)] hover:text-[var(--foreground)] hover:bg-white/5 transition-colors duration-200"
-                      >
-                        <Pencil size={15} />
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setDeleteTarget(a)}
-                        className="focus-ring h-8 w-8 flex items-center justify-center rounded-lg text-[var(--foreground-muted)] hover:text-[var(--danger)] hover:bg-white/5 transition-colors duration-200"
-                      >
-                        <Trash2 size={15} />
-                      </button>
+                      {allowEdit && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setEditingAppointment(a);
+                            setModalOpen(true);
+                          }}
+                          className="focus-ring h-8 w-8 flex items-center justify-center rounded-lg text-[var(--foreground-muted)] hover:text-[var(--foreground)] hover:bg-white/5 transition-colors duration-200"
+                        >
+                          <Pencil size={15} />
+                        </button>
+                      )}
+                      {allowDelete && (
+                        <button
+                          type="button"
+                          onClick={() => setDeleteTarget(a)}
+                          className="focus-ring h-8 w-8 flex items-center justify-center rounded-lg text-[var(--foreground-muted)] hover:text-[var(--danger)] hover:bg-white/5 transition-colors duration-200"
+                        >
+                          <Trash2 size={15} />
+                        </button>
+                      )}
                     </div>
                   </td>
                 </tr>
