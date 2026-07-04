@@ -5,7 +5,8 @@ import { Plus, Search, Pencil, Trash2, Stethoscope, AlertCircle } from "lucide-r
 import GlassCard from "@/components/ui/GlassCard";
 import Button from "@/components/ui/Button";
 import Input from "@/components/ui/Input";
-import DoctorFormModal from "@/components/doctors/DoctorFormModal";
+import dynamic from "next/dynamic";
+const DoctorFormModal = dynamic(() => import("@/components/doctors/DoctorFormModal"), { ssr: false });
 import { DoctorDto } from "@/types/doctor";
 import { getDoctors, deleteDoctor } from "@/lib/doctors";
 import { useAuth } from "@/context/AuthContext";

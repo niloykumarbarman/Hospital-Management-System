@@ -5,7 +5,8 @@ import { Plus, Search, Pencil, Trash2, ClipboardList, AlertCircle } from "lucide
 import GlassCard from "@/components/ui/GlassCard";
 import Button from "@/components/ui/Button";
 import Input from "@/components/ui/Input";
-import PrescriptionFormModal from "@/components/prescriptions/PrescriptionFormModal";
+import dynamic from "next/dynamic";
+const PrescriptionFormModal = dynamic(() => import("@/components/prescriptions/PrescriptionFormModal"), { ssr: false });
 import { PrescriptionDto } from "@/types/prescription";
 import { getPrescriptions, deletePrescription } from "@/lib/prescriptions";
 

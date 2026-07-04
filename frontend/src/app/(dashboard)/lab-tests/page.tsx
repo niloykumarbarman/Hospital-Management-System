@@ -5,7 +5,8 @@ import { Plus, Search, Pencil, Trash2, FlaskConical, AlertCircle, CheckCircle2, 
 import GlassCard from "@/components/ui/GlassCard";
 import Button from "@/components/ui/Button";
 import Input from "@/components/ui/Input";
-import LabTestFormModal from "@/components/labTests/LabTestFormModal";
+import dynamic from "next/dynamic";
+const LabTestFormModal = dynamic(() => import("@/components/labTests/LabTestFormModal"), { ssr: false });
 import { LabTestDto } from "@/types/labTest";
 import { getLabTests, deleteLabTest } from "@/lib/labTests";
 

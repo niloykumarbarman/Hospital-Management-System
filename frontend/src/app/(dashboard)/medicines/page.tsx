@@ -5,7 +5,8 @@ import { Plus, Search, Pencil, Trash2, Pill, AlertCircle, AlertTriangle } from "
 import GlassCard from "@/components/ui/GlassCard";
 import Button from "@/components/ui/Button";
 import Input from "@/components/ui/Input";
-import MedicineFormModal from "@/components/medicines/MedicineFormModal";
+import dynamic from "next/dynamic";
+const MedicineFormModal = dynamic(() => import("@/components/medicines/MedicineFormModal"), { ssr: false });
 import { MedicineDto } from "@/types/medicine";
 import { getMedicines, deleteMedicine } from "@/lib/medicines";
 

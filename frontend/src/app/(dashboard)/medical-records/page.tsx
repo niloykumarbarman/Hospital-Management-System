@@ -5,9 +5,12 @@ import { Plus, Search, Pencil, Trash2, FileText, AlertCircle } from "lucide-reac
 import GlassCard from "@/components/ui/GlassCard";
 import Button from "@/components/ui/Button";
 import Input from "@/components/ui/Input";
-import MedicalRecordFormModal from "@/components/medicalRecords/MedicalRecordFormModal";
+import dynamic from "next/dynamic";
+const MedicalRecordFormModal = dynamic(() => import("@/components/medicalRecords/MedicalRecordFormModal"), { ssr: false });
 import { MedicalRecordDto, AdmissionType, ADMISSION_TYPE_LABELS } from "@/types/medicalRecord";
 import { getMedicalRecords, deleteMedicalRecord } from "@/lib/medicalRecords";
+import { useAuth } from "@/context/AuthContext";
+import { canCreate, canEdit, canDelete } from "@/lib/permissions";
 
 export default function MedicalRecordsPage() {
   const [records, setRecords] = useState<MedicalRecordDto[]>([]);
@@ -19,6 +22,10 @@ export default function MedicalRecordsPage() {
   const [editingRecord, setEditingRecord] = useState<MedicalRecordDto | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<MedicalRecordDto | null>(null);
   const [deleting, setDeleting] = useState(false);
+  const { user } = useAuth();
+  const allowCreate = canCreate(user?.role, "MedicalRecord");
+  const allowEdit = canEdit(user?.role, "MedicalRecord");
+  const allowDelete = canDelete(user?.role, "MedicalRecord");
 
   useEffect(() => {
     const t = setTimeout(() => setDebouncedSearch(search), 300);
@@ -94,15 +101,17 @@ export default function MedicalRecordsPage() {
             Track patient visits, diagnoses, and treatment plans
           </p>
         </div>
-        <Button
-          onClick={() => {
-            setEditingRecord(null);
-            setModalOpen(true);
-          }}
-        >
-          <Plus size={16} className="mr-2" />
-          Add Record
-        </Button>
+        {allowCreate && (
+          <Button
+            onClick={() => {
+              setEditingRecord(null);
+              setModalOpen(true);
+            }}
+          >
+            <Plus size={16} className="mr-2" />
+            Add Record
+          </Button>
+        )}
       </div>
 
       <div className="relative animate-fade-in-up" style={{ animationDelay: "40ms" }}>
@@ -145,7 +154,7 @@ export default function MedicalRecordsPage() {
               ? "Add your first medical record to start building patient history."
               : "Try a different search term."}
           </p>
-          {records.length === 0 && (
+          {records.length === 0 && allowCreate && (
             <Button
               className="mt-5"
               onClick={() => {

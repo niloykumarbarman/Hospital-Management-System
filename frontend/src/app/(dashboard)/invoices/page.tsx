@@ -5,8 +5,9 @@ import { Plus, Search, Trash2, Receipt, AlertCircle, Wallet } from "lucide-react
 import GlassCard from "@/components/ui/GlassCard";
 import Button from "@/components/ui/Button";
 import Input from "@/components/ui/Input";
-import InvoiceFormModal from "@/components/invoices/InvoiceFormModal";
-import RecordPaymentModal from "@/components/invoices/RecordPaymentModal";
+import dynamic from "next/dynamic";
+const InvoiceFormModal = dynamic(() => import("@/components/invoices/InvoiceFormModal"), { ssr: false });
+const RecordPaymentModal = dynamic(() => import("@/components/invoices/RecordPaymentModal"), { ssr: false });
 import { InvoiceDto, PaymentStatus, PAYMENT_STATUS_LABELS } from "@/types/invoice";
 import { getInvoices, deleteInvoice } from "@/lib/invoices";
 

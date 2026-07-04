@@ -5,7 +5,8 @@ import { Plus, Search, Pencil, Trash2, CalendarClock, AlertCircle } from "lucide
 import GlassCard from "@/components/ui/GlassCard";
 import Button from "@/components/ui/Button";
 import Input from "@/components/ui/Input";
-import AppointmentFormModal from "@/components/appointments/AppointmentFormModal";
+import dynamic from "next/dynamic";
+const AppointmentFormModal = dynamic(() => import("@/components/appointments/AppointmentFormModal"), { ssr: false });
 import {
   AppointmentStatus,
   APPOINTMENT_STATUS_LABELS,

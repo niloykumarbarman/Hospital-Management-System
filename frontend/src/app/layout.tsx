@@ -15,6 +15,10 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "HMS | Hospital Management System",
   description: "Hospital Management System - Admin Portal",
+  robots: {
+    index: false,
+    follow: false,
+  },
 };
 
 export default function RootLayout({
