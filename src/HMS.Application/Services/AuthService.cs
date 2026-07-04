@@ -49,6 +49,7 @@ public class AuthService : IAuthService
 
         return new AuthResponseDto
         {
+            UserId = user.Id,
             Token = token,
             FullName = user.FullName,
             Email = user.Email,
@@ -78,6 +79,7 @@ public class AuthService : IAuthService
 
         return new AuthResponseDto
         {
+            UserId = user.Id,
             Token = token,
             FullName = user.FullName,
             Email = user.Email,
