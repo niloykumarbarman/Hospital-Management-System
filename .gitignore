@@ -28,3 +28,7 @@ Thumbs.db
 
 # Misc
 *.pdb
+
+# Runtime logs
+run_log.txt
+src/HMS.API/Logs/
