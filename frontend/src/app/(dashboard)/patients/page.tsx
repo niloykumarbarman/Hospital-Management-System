@@ -8,6 +8,8 @@ import Input from "@/components/ui/Input";
 import PatientFormModal from "@/components/patients/PatientFormModal";
 import { GENDER_LABELS, PatientDto } from "@/types/patient";
 import { getPatients, deletePatient } from "@/lib/patients";
+import { useAuth } from "@/context/AuthContext";
+import { canCreate, canEdit, canDelete } from "@/lib/permissions";
 
 export default function PatientsPage() {
   const [patients, setPatients] = useState<PatientDto[]>([]);
@@ -19,6 +21,10 @@ export default function PatientsPage() {
   const [editingPatient, setEditingPatient] = useState<PatientDto | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<PatientDto | null>(null);
   const [deleting, setDeleting] = useState(false);
+  const { user } = useAuth();
+  const allowCreate = canCreate(user?.role, "Patient");
+  const allowEdit = canEdit(user?.role, "Patient");
+  const allowDelete = canDelete(user?.role, "Patient");
 
   useEffect(() => {
     const t = setTimeout(() => setDebouncedSearch(search), 300);
@@ -84,15 +90,17 @@ export default function PatientsPage() {
             Manage patient records and profiles
           </p>
         </div>
-        <Button
-          onClick={() => {
-            setEditingPatient(null);
-            setModalOpen(true);
-          }}
-        >
-          <Plus size={16} className="mr-2" />
-          Add Patient
-        </Button>
+        {allowCreate && (
+          <Button
+            onClick={() => {
+              setEditingPatient(null);
+              setModalOpen(true);
+            }}
+          >
+            <Plus size={16} className="mr-2" />
+            Add Patient
+          </Button>
+        )}
       </div>
 
       <div
@@ -140,7 +148,7 @@ export default function PatientsPage() {
               ? "Add your first patient to start building your records."
               : "Try a different search term."}
           </p>
-          {patients.length === 0 && (
+          {patients.length === 0 && allowCreate && (
             <Button
               className="mt-5"
               onClick={() => {
@@ -171,23 +179,27 @@ export default function PatientsPage() {
                   </p>
                 </div>
                 <div className="flex items-center gap-1">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setEditingPatient(patient);
-                      setModalOpen(true);
-                    }}
-                    className="focus-ring h-8 w-8 flex items-center justify-center rounded-lg text-[var(--foreground-muted)] hover:text-[var(--foreground)] hover:bg-white/5 transition-colors duration-200"
-                  >
-                    <Pencil size={15} />
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setDeleteTarget(patient)}
-                    className="focus-ring h-8 w-8 flex items-center justify-center rounded-lg text-[var(--foreground-muted)] hover:text-[var(--danger)] hover:bg-white/5 transition-colors duration-200"
-                  >
-                    <Trash2 size={15} />
-                  </button>
+                  {allowEdit && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setEditingPatient(patient);
+                        setModalOpen(true);
+                      }}
+                      className="focus-ring h-8 w-8 flex items-center justify-center rounded-lg text-[var(--foreground-muted)] hover:text-[var(--foreground)] hover:bg-white/5 transition-colors duration-200"
+                    >
+                      <Pencil size={15} />
+                    </button>
+                  )}
+                  {allowDelete && (
+                    <button
+                      type="button"
+                      onClick={() => setDeleteTarget(patient)}
+                      className="focus-ring h-8 w-8 flex items-center justify-center rounded-lg text-[var(--foreground-muted)] hover:text-[var(--danger)] hover:bg-white/5 transition-colors duration-200"
+                    >
+                      <Trash2 size={15} />
+                    </button>
+                  )}
                 </div>
               </div>
 
