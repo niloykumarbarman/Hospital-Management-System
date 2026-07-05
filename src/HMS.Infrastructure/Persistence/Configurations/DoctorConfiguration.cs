@@ -25,6 +25,6 @@ public class DoctorConfiguration : IEntityTypeConfiguration<Doctor>
         // that user to a new Doctor profile.
         builder.HasIndex(d => d.UserId)
             .IsUnique()
-            .HasFilter("[IsDeleted] = 0");
+            .HasFilter("\"IsDeleted\" = false");
     }
 }
