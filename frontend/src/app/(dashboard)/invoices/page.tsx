@@ -10,6 +10,8 @@ const InvoiceFormModal = dynamic(() => import("@/components/invoices/InvoiceForm
 const RecordPaymentModal = dynamic(() => import("@/components/invoices/RecordPaymentModal"), { ssr: false });
 import { InvoiceDto, PaymentStatus, PAYMENT_STATUS_LABELS } from "@/types/invoice";
 import { getInvoices, deleteInvoice } from "@/lib/invoices";
+import { useAuth } from "@/context/AuthContext";
+import { canCreate, canEdit, canDelete } from "@/lib/permissions";
 
 const STATUS_STYLES: Record<PaymentStatus, string> = {
   [PaymentStatus.Unpaid]: "bg-[var(--danger)]/15 text-[var(--danger)]",
@@ -28,6 +30,10 @@ export default function InvoicesPage() {
   const [paymentTarget, setPaymentTarget] = useState<InvoiceDto | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<InvoiceDto | null>(null);
   const [deleting, setDeleting] = useState(false);
+  const { user } = useAuth();
+  const allowCreate = canCreate(user?.role, "Invoice");
+  const allowEdit = canEdit(user?.role, "Invoice");
+  const allowDelete = canDelete(user?.role, "Invoice");
 
   useEffect(() => {
     const t = setTimeout(() => setDebouncedSearch(search), 300);
@@ -100,10 +106,12 @@ export default function InvoicesPage() {
             Manage patient billing and payments
           </p>
         </div>
-        <Button onClick={() => setModalOpen(true)}>
-          <Plus size={16} className="mr-2" />
-          Create Invoice
-        </Button>
+        {allowCreate && (
+          <Button onClick={() => setModalOpen(true)}>
+            <Plus size={16} className="mr-2" />
+            Create Invoice
+          </Button>
+        )}
       </div>
 
       <div className="relative animate-fade-in-up" style={{ animationDelay: "40ms" }}>
@@ -146,7 +154,7 @@ export default function InvoicesPage() {
               ? "Create your first invoice to start billing patients."
               : "Try a different search term."}
           </p>
-          {invoices.length === 0 && (
+          {invoices.length === 0 && allowCreate && (
             <Button className="mt-5" onClick={() => setModalOpen(true)}>
               <Plus size={16} className="mr-2" />
               Create Invoice
@@ -171,7 +179,8 @@ export default function InvoicesPage() {
                   </p>
                 </div>
                 <div className="flex items-center gap-1">
-                  {invoice.paymentStatus !== PaymentStatus.Paid &&
+                  {allowEdit &&
+                    invoice.paymentStatus !== PaymentStatus.Paid &&
                     invoice.paymentStatus !== PaymentStatus.Refunded && (
                       <button
                         type="button"
@@ -182,13 +191,15 @@ export default function InvoicesPage() {
                         <Wallet size={15} />
                       </button>
                     )}
-                  <button
-                    type="button"
-                    onClick={() => setDeleteTarget(invoice)}
-                    className="focus-ring h-8 w-8 flex items-center justify-center rounded-lg text-[var(--foreground-muted)] hover:text-[var(--danger)] hover:bg-white/5 transition-colors duration-200"
-                  >
-                    <Trash2 size={15} />
-                  </button>
+                  {allowDelete && (
+                    <button
+                      type="button"
+                      onClick={() => setDeleteTarget(invoice)}
+                      className="focus-ring h-8 w-8 flex items-center justify-center rounded-lg text-[var(--foreground-muted)] hover:text-[var(--danger)] hover:bg-white/5 transition-colors duration-200"
+                    >
+                      <Trash2 size={15} />
+                    </button>
+                  )}
                 </div>
               </div>
 
