@@ -43,7 +43,7 @@ public class BackupService : IBackupService
         Directory.CreateDirectory(_hostBackupDirectory);
     }
 
-    public async Task<BackupFileDto> CreateBackupAsync()
+    public Task<BackupFileDto> CreateBackupAsync()
     {
         var fileName = $"{_databaseName}_{DateTime.UtcNow:yyyyMMdd_HHmmss}.dump";
         var containerFilePath = $"{_containerBackupDirectory}/{fileName}";
@@ -62,7 +62,7 @@ public class BackupService : IBackupService
             throw new InvalidOperationException("Backup file was not found on host after docker cp.");
         }
 
-        return new BackupFileDto { FileName = fileName, SizeBytes = info.Length, CreatedAtUtc = info.CreationTimeUtc };
+        return Task.FromResult(new BackupFileDto { FileName = fileName, SizeBytes = info.Length, CreatedAtUtc = info.CreationTimeUtc });
     }
 
     public Task<IEnumerable<BackupFileDto>> ListBackupsAsync()
