@@ -11,32 +11,30 @@ namespace HMS.Infrastructure.Services;
 public class BackupService : IBackupService
 {
     private readonly string _connectionString;
-    private readonly string _containerName;
     private readonly string _hostBackupDirectory;
-    private readonly string _containerBackupDirectory;
     private readonly string _databaseName;
+    private readonly string _dbHost;
+    private readonly int _dbPort;
     private readonly string _dbUser;
     private readonly string _dbPassword;
     private readonly ILogger<BackupService> _logger;
 
     // Only allow simple, extension-locked file names to prevent path traversal
-    // or argument injection into the docker CLI / pg_dump commands.
+    // or argument injection into the pg_dump/pg_restore commands.
     private static readonly Regex SafeFileNameRegex = new(@"^[A-Za-z0-9_\-]+\.dump$", RegexOptions.Compiled);
 
     public BackupService(IConfiguration configuration, ILogger<BackupService> logger)
     {
         _connectionString = configuration.GetConnectionString("DefaultConnection")
             ?? throw new InvalidOperationException("DefaultConnection is not configured.");
-        _containerName = configuration["Backup:ContainerName"]
-            ?? throw new InvalidOperationException("Backup:ContainerName is not configured.");
         _hostBackupDirectory = configuration["Backup:HostBackupDirectory"]
             ?? throw new InvalidOperationException("Backup:HostBackupDirectory is not configured.");
-        _containerBackupDirectory = configuration["Backup:ContainerBackupDirectory"]
-            ?? throw new InvalidOperationException("Backup:ContainerBackupDirectory is not configured.");
         _databaseName = configuration["Backup:DatabaseName"] ?? "HmsDb";
         _logger = logger;
 
         var connBuilder = new NpgsqlConnectionStringBuilder(_connectionString);
+        _dbHost = connBuilder.Host ?? "localhost";
+        _dbPort = connBuilder.Port != 0 ? connBuilder.Port : 5432;
         _dbUser = connBuilder.Username ?? "postgres";
         _dbPassword = connBuilder.Password ?? string.Empty;
 
@@ -46,20 +44,16 @@ public class BackupService : IBackupService
     public Task<BackupFileDto> CreateBackupAsync()
     {
         var fileName = $"{_databaseName}_{DateTime.UtcNow:yyyyMMdd_HHmmss}.dump";
-        var containerFilePath = $"{_containerBackupDirectory}/{fileName}";
         var hostFilePath = Path.Combine(_hostBackupDirectory, fileName);
 
-        RunDockerCommand(
-            "exec", "-e", $"PGPASSWORD={_dbPassword}", _containerName,
-            "pg_dump", "-h", "127.0.0.1", "-U", _dbUser, "-F", "c", "-f", containerFilePath, _databaseName);
-
-        RunDockerCommand("cp", $"{_containerName}:{containerFilePath}", hostFilePath);
-        RunDockerCommand("exec", _containerName, "rm", "-f", containerFilePath);
+        RunPgCommand("pg_dump",
+            "-h", _dbHost, "-p", _dbPort.ToString(), "-U", _dbUser,
+            "-F", "c", "-f", hostFilePath, _databaseName);
 
         var info = new FileInfo(hostFilePath);
         if (!info.Exists)
         {
-            throw new InvalidOperationException("Backup file was not found on host after docker cp.");
+            throw new InvalidOperationException("Backup file was not created by pg_dump.");
         }
 
         return Task.FromResult(new BackupFileDto { FileName = fileName, SizeBytes = info.Length, CreatedAtUtc = info.CreationTimeUtc });
@@ -101,22 +95,11 @@ public class BackupService : IBackupService
             await fileContent.CopyToAsync(fs);
         }
 
-        var containerFilePath = $"{_containerBackupDirectory}/{fileName}";
-        RunDockerCommand("cp", hostFilePath, $"{_containerName}:{containerFilePath}");
-
         await TerminateActiveConnectionsAsync();
 
-        try
-        {
-            RunDockerCommand(
-                "exec", "-e", $"PGPASSWORD={_dbPassword}", _containerName,
-                "pg_restore", "-h", "127.0.0.1", "-U", _dbUser, "-d", _databaseName,
-                "--clean", "--if-exists", containerFilePath);
-        }
-        finally
-        {
-            RunDockerCommand("exec", _containerName, "rm", "-f", containerFilePath);
-        }
+        RunPgCommand("pg_restore",
+            "-h", _dbHost, "-p", _dbPort.ToString(), "-U", _dbUser, "-d", _databaseName,
+            "--clean", "--if-exists", hostFilePath);
 
         NpgsqlConnection.ClearAllPools();
     }
@@ -158,23 +141,25 @@ public class BackupService : IBackupService
         await command.ExecuteNonQueryAsync();
     }
 
-    private void RunDockerCommand(params string[] arguments)
+    private void RunPgCommand(string fileName, params string[] arguments)
     {
         var psi = new ProcessStartInfo
         {
-            FileName = "docker",
+            FileName = fileName,
             RedirectStandardOutput = true,
             RedirectStandardError = true,
             UseShellExecute = false,
             CreateNoWindow = true
         };
+        psi.Environment["PGPASSWORD"] = _dbPassword;
+
         foreach (var arg in arguments)
         {
             psi.ArgumentList.Add(arg);
         }
 
         using var process = Process.Start(psi)
-            ?? throw new InvalidOperationException("Failed to start docker process.");
+            ?? throw new InvalidOperationException($"Failed to start {fileName} process.");
 
         var stderr = process.StandardError.ReadToEnd();
         process.StandardOutput.ReadToEnd();
@@ -182,10 +167,8 @@ public class BackupService : IBackupService
 
         if (process.ExitCode != 0)
         {
-            var safeArgs = string.Join(' ', arguments.Select(a => a.StartsWith("PGPASSWORD=") ? "PGPASSWORD=***" : a));
-            _logger.LogError("docker {Args} failed with exit code {Code}. stderr: {StdErr}",
-                safeArgs, process.ExitCode, stderr);
-            throw new InvalidOperationException($"Docker command failed: docker {safeArgs}. {stderr}");
+            _logger.LogError("{Cmd} failed with exit code {Code}. stderr: {StdErr}", fileName, process.ExitCode, stderr);
+            throw new InvalidOperationException($"{fileName} command failed. {stderr}");
         }
     }
 }
