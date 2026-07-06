@@ -9,6 +9,8 @@ import dynamic from "next/dynamic";
 const LabTestFormModal = dynamic(() => import("@/components/labTests/LabTestFormModal"), { ssr: false });
 import { LabTestDto } from "@/types/labTest";
 import { getLabTests, deleteLabTest } from "@/lib/labTests";
+import { useAuth } from "@/context/AuthContext";
+import { canCreate, canEdit, canDelete } from "@/lib/permissions";
 
 export default function LabTestsPage() {
   const [labTests, setLabTests] = useState<LabTestDto[]>([]);
@@ -20,6 +22,10 @@ export default function LabTestsPage() {
   const [editingLabTest, setEditingLabTest] = useState<LabTestDto | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<LabTestDto | null>(null);
   const [deleting, setDeleting] = useState(false);
+  const { user } = useAuth();
+  const allowCreate = canCreate(user?.role, "LabTest");
+  const allowEdit = canEdit(user?.role, "LabTest");
+  const allowDelete = canDelete(user?.role, "LabTest");
 
   useEffect(() => {
     const t = setTimeout(() => setDebouncedSearch(search), 300);
@@ -92,15 +98,17 @@ export default function LabTestsPage() {
             Manage lab test requests and results
           </p>
         </div>
-        <Button
-          onClick={() => {
-            setEditingLabTest(null);
-            setModalOpen(true);
-          }}
-        >
-          <Plus size={16} className="mr-2" />
-          Request Test
-        </Button>
+        {allowCreate && (
+          <Button
+            onClick={() => {
+              setEditingLabTest(null);
+              setModalOpen(true);
+            }}
+          >
+            <Plus size={16} className="mr-2" />
+            Request Test
+          </Button>
+        )}
       </div>
 
       <div className="relative animate-fade-in-up" style={{ animationDelay: "40ms" }}>
@@ -143,7 +151,7 @@ export default function LabTestsPage() {
               ? "Request your first lab test to get started."
               : "Try a different search term."}
           </p>
-          {labTests.length === 0 && (
+          {labTests.length === 0 && allowCreate && (
             <Button
               className="mt-5"
               onClick={() => {
@@ -175,23 +183,27 @@ export default function LabTestsPage() {
                   </p>
                 </div>
                 <div className="flex items-center gap-1">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setEditingLabTest(labTest);
-                      setModalOpen(true);
-                    }}
-                    className="focus-ring h-8 w-8 flex items-center justify-center rounded-lg text-[var(--foreground-muted)] hover:text-[var(--foreground)] hover:bg-white/5 transition-colors duration-200"
-                  >
-                    <Pencil size={15} />
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setDeleteTarget(labTest)}
-                    className="focus-ring h-8 w-8 flex items-center justify-center rounded-lg text-[var(--foreground-muted)] hover:text-[var(--danger)] hover:bg-white/5 transition-colors duration-200"
-                  >
-                    <Trash2 size={15} />
-                  </button>
+                  {allowEdit && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setEditingLabTest(labTest);
+                        setModalOpen(true);
+                      }}
+                      className="focus-ring h-8 w-8 flex items-center justify-center rounded-lg text-[var(--foreground-muted)] hover:text-[var(--foreground)] hover:bg-white/5 transition-colors duration-200"
+                    >
+                      <Pencil size={15} />
+                    </button>
+                  )}
+                  {allowDelete && (
+                    <button
+                      type="button"
+                      onClick={() => setDeleteTarget(labTest)}
+                      className="focus-ring h-8 w-8 flex items-center justify-center rounded-lg text-[var(--foreground-muted)] hover:text-[var(--danger)] hover:bg-white/5 transition-colors duration-200"
+                    >
+                      <Trash2 size={15} />
+                    </button>
+                  )}
                 </div>
               </div>
 
