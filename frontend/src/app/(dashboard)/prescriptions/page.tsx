@@ -9,6 +9,8 @@ import dynamic from "next/dynamic";
 const PrescriptionFormModal = dynamic(() => import("@/components/prescriptions/PrescriptionFormModal"), { ssr: false });
 import { PrescriptionDto } from "@/types/prescription";
 import { getPrescriptions, deletePrescription } from "@/lib/prescriptions";
+import { useAuth } from "@/context/AuthContext";
+import { canCreate, canEdit, canDelete } from "@/lib/permissions";
 
 export default function PrescriptionsPage() {
   const [prescriptions, setPrescriptions] = useState<PrescriptionDto[]>([]);
@@ -20,6 +22,10 @@ export default function PrescriptionsPage() {
   const [editingPrescription, setEditingPrescription] = useState<PrescriptionDto | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<PrescriptionDto | null>(null);
   const [deleting, setDeleting] = useState(false);
+  const { user } = useAuth();
+  const allowCreate = canCreate(user?.role, "Prescription");
+  const allowEdit = canEdit(user?.role, "Prescription");
+  const allowDelete = canDelete(user?.role, "Prescription");
 
   useEffect(() => {
     const t = setTimeout(() => setDebouncedSearch(search), 300);
@@ -92,15 +98,17 @@ export default function PrescriptionsPage() {
             Manage patient prescriptions and medicine orders
           </p>
         </div>
-        <Button
-          onClick={() => {
-            setEditingPrescription(null);
-            setModalOpen(true);
-          }}
-        >
-          <Plus size={16} className="mr-2" />
-          Add Prescription
-        </Button>
+        {allowCreate && (
+          <Button
+            onClick={() => {
+              setEditingPrescription(null);
+              setModalOpen(true);
+            }}
+          >
+            <Plus size={16} className="mr-2" />
+            Add Prescription
+          </Button>
+        )}
       </div>
 
       <div className="relative animate-fade-in-up" style={{ animationDelay: "40ms" }}>
@@ -143,7 +151,7 @@ export default function PrescriptionsPage() {
               ? "Add your first prescription to get started."
               : "Try a different search term."}
           </p>
-          {prescriptions.length === 0 && (
+          {prescriptions.length === 0 && allowCreate && (
             <Button
               className="mt-5"
               onClick={() => {
@@ -174,23 +182,27 @@ export default function PrescriptionsPage() {
                   </p>
                 </div>
                 <div className="flex items-center gap-1">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setEditingPrescription(prescription);
-                      setModalOpen(true);
-                    }}
-                    className="focus-ring h-8 w-8 flex items-center justify-center rounded-lg text-[var(--foreground-muted)] hover:text-[var(--foreground)] hover:bg-white/5 transition-colors duration-200"
-                  >
-                    <Pencil size={15} />
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setDeleteTarget(prescription)}
-                    className="focus-ring h-8 w-8 flex items-center justify-center rounded-lg text-[var(--foreground-muted)] hover:text-[var(--danger)] hover:bg-white/5 transition-colors duration-200"
-                  >
-                    <Trash2 size={15} />
-                  </button>
+                  {allowEdit && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setEditingPrescription(prescription);
+                        setModalOpen(true);
+                      }}
+                      className="focus-ring h-8 w-8 flex items-center justify-center rounded-lg text-[var(--foreground-muted)] hover:text-[var(--foreground)] hover:bg-white/5 transition-colors duration-200"
+                    >
+                      <Pencil size={15} />
+                    </button>
+                  )}
+                  {allowDelete && (
+                    <button
+                      type="button"
+                      onClick={() => setDeleteTarget(prescription)}
+                      className="focus-ring h-8 w-8 flex items-center justify-center rounded-lg text-[var(--foreground-muted)] hover:text-[var(--danger)] hover:bg-white/5 transition-colors duration-200"
+                    >
+                      <Trash2 size={15} />
+                    </button>
+                  )}
                 </div>
               </div>
 
