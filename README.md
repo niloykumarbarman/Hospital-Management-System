@@ -4,6 +4,16 @@ A full-stack Hospital Management System built with a .NET 9 Clean Architecture b
 
 ![Status](https://img.shields.io/badge/status-active-brightgreen) ![.NET](https://img.shields.io/badge/.NET-9-512BD4) ![Next.js](https://img.shields.io/badge/Next.js-16-black) ![License](https://img.shields.io/badge/license-MIT-blue)
 
+## Live Deployment
+
+| Service | URL | Host |
+|---|---|---|
+| Frontend | [hospital-management-system-murex-xi.vercel.app](https://hospital-management-system-murex-xi.vercel.app) | Vercel (Free) |
+| Backend API | [hospital-management-system-nmm7.onrender.com](https://hospital-management-system-nmm7.onrender.com) | Render (Free, Docker) |
+| Database | PostgreSQL | Render (Free) |
+
+> **Note:** The backend runs on Render's free tier, which spins down after 15 minutes of inactivity. The first request after idle time may take 30–50 seconds while the instance wakes up.
+
 ## Screenshots
 
 > _Add screenshots here — e.g. `docs/screenshots/dashboard.png`_
@@ -17,7 +27,7 @@ A full-stack Hospital Management System built with a .NET 9 Clean Architecture b
 **Backend**
 - .NET 9 / ASP.NET Core Web API
 - Entity Framework Core 9.0.0 — ORM, code-first migrations
-- SQL Server 2022 (Docker container)
+- PostgreSQL 16 (Docker container for local dev; Render PostgreSQL in production)
 - JWT Authentication with role-based authorization
 - FluentValidation — request validation
 - AutoMapper 16.1.1 — DTO mapping
@@ -81,6 +91,8 @@ The frontend is a standard Next.js App Router project, with a consistent pattern
 - Dashboard overview — live stats (patients, doctors, today's appointments, pending invoices), recent appointments, and quick actions
 
 ### Database Backup and Restore
+
+> **Note:** This section describes the original SQL Server-based backup flow, kept for reference. It is not yet updated for PostgreSQL — see Known Gotchas below.
 
 Since the SQL Server container has no host-mounted volume and the API runs on the Windows host (not inside the container), backup/restore works as follows:
 
@@ -154,17 +166,17 @@ Endpoints (all require Admin role):
 
 ### 1. Start the database container
 
-    docker ps -a --filter name=hms-sqlserver
+    docker ps -a --filter name=hms-postgres
 
 If the container doesn't exist, create it:
 
-    docker run -e "ACCEPT_EULA=Y" -e "MSSQLSA_PASSWORD=HmsStrong@Pass123" -p 1433:1433 --name hms-sqlserver -d mcr.microsoft.com/mssql/server:2022-latest
+    docker run -d --name hms-postgres -p 5433:5432 -e POSTGRES_PASSWORD=HmsStrong@Pass123 -e POSTGRES_DB=HmsDb postgres:16-alpine
 
 If it exists but is stopped:
 
-    docker start hms-sqlserver
+    docker start hms-postgres
 
-On Windows/Git Bash, prefix Docker commands with `MSYS_NO_PATHCONV=1` to avoid path mangling.
+On Windows/Git Bash, prefix Docker `exec` commands with `MSYS_NO_PATHCONV=1` to avoid path mangling.
 
 ### 2. Apply migrations
 
@@ -203,6 +215,7 @@ Current status: 57 tests, 0 failed.
 - Windows/Git Bash file uploads: `curl -F "file=@..."` with an MSYS-style path (`/e/...`) fails silently with "curl: (26) Failed to open/read local data from file/application". Use the native Windows path format instead (e.g. `E:/HMS_DB_Backups/file.bak`).
 - Soft-delete + unique indexes: fields like PatientCode, Doctor.UserId, and InvoiceNumber require `IgnoreQueryFilters` in relevant queries to correctly handle uniqueness against soft-deleted records.
 - File locks during rebuild: if `dotnet run` is active, a subsequent `dotnet build`/`dotnet run` will fail with a file lock error. Stop the running process first.
+- `BackupService.cs` still uses SQL Server-specific `SqlConnection`/`SqlCommand` APIs left over from the pre-migration setup. Backup/restore features will fail at runtime against PostgreSQL until this is rewritten with Npgsql or `pg_dump`/`pg_restore`.
 
 ## Roadmap
 
