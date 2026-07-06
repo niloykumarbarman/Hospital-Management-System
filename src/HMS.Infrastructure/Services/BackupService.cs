@@ -2,9 +2,9 @@ using System.Diagnostics;
 using System.Text.RegularExpressions;
 using HMS.Application.DTOs.Backup;
 using HMS.Application.Interfaces;
-using Microsoft.Data.SqlClient;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
+using Npgsql;
 
 namespace HMS.Infrastructure.Services;
 
@@ -15,11 +15,13 @@ public class BackupService : IBackupService
     private readonly string _hostBackupDirectory;
     private readonly string _containerBackupDirectory;
     private readonly string _databaseName;
+    private readonly string _dbUser;
+    private readonly string _dbPassword;
     private readonly ILogger<BackupService> _logger;
 
     // Only allow simple, extension-locked file names to prevent path traversal
-    // or argument injection into the docker CLI / SQL commands.
-    private static readonly Regex SafeFileNameRegex = new(@"^[A-Za-z0-9_\-]+\.bak$", RegexOptions.Compiled);
+    // or argument injection into the docker CLI / pg_dump commands.
+    private static readonly Regex SafeFileNameRegex = new(@"^[A-Za-z0-9_\-]+\.dump$", RegexOptions.Compiled);
 
     public BackupService(IConfiguration configuration, ILogger<BackupService> logger)
     {
@@ -34,23 +36,22 @@ public class BackupService : IBackupService
         _databaseName = configuration["Backup:DatabaseName"] ?? "HmsDb";
         _logger = logger;
 
+        var connBuilder = new NpgsqlConnectionStringBuilder(_connectionString);
+        _dbUser = connBuilder.Username ?? "postgres";
+        _dbPassword = connBuilder.Password ?? string.Empty;
+
         Directory.CreateDirectory(_hostBackupDirectory);
     }
 
     public async Task<BackupFileDto> CreateBackupAsync()
     {
-        var fileName = $"{_databaseName}_{DateTime.UtcNow:yyyyMMdd_HHmmss}.bak";
+        var fileName = $"{_databaseName}_{DateTime.UtcNow:yyyyMMdd_HHmmss}.dump";
         var containerFilePath = $"{_containerBackupDirectory}/{fileName}";
         var hostFilePath = Path.Combine(_hostBackupDirectory, fileName);
 
-        await using (var connection = new SqlConnection(BuildMasterConnectionString()))
-        {
-            await connection.OpenAsync();
-            var sql = $"BACKUP DATABASE [{_databaseName}] TO DISK = @path WITH INIT, FORMAT";
-            await using var command = new SqlCommand(sql, connection) { CommandTimeout = 120 };
-            command.Parameters.AddWithValue("@path", containerFilePath);
-            await command.ExecuteNonQueryAsync();
-        }
+        RunDockerCommand(
+            "exec", "-e", $"PGPASSWORD={_dbPassword}", _containerName,
+            "pg_dump", "-h", "127.0.0.1", "-U", _dbUser, "-F", "c", "-f", containerFilePath, _databaseName);
 
         RunDockerCommand("cp", $"{_containerName}:{containerFilePath}", hostFilePath);
         RunDockerCommand("exec", _containerName, "rm", "-f", containerFilePath);
@@ -68,7 +69,7 @@ public class BackupService : IBackupService
     {
         Directory.CreateDirectory(_hostBackupDirectory);
 
-        var files = Directory.GetFiles(_hostBackupDirectory, "*.bak")
+        var files = Directory.GetFiles(_hostBackupDirectory, "*.dump")
             .Select(f => new FileInfo(f))
             .OrderByDescending(f => f.CreationTimeUtc)
             .Select(f => new BackupFileDto { FileName = f.Name, SizeBytes = f.Length, CreatedAtUtc = f.CreationTimeUtc })
@@ -103,30 +104,21 @@ public class BackupService : IBackupService
         var containerFilePath = $"{_containerBackupDirectory}/{fileName}";
         RunDockerCommand("cp", hostFilePath, $"{_containerName}:{containerFilePath}");
 
-        await using (var connection = new SqlConnection(BuildMasterConnectionString()))
+        await TerminateActiveConnectionsAsync();
+
+        try
         {
-            await connection.OpenAsync();
-
-            // Kick out any active connections (including EF Core's pooled ones) before restoring
-            await ExecuteNonQueryAsync(connection, $"ALTER DATABASE [{_databaseName}] SET SINGLE_USER WITH ROLLBACK IMMEDIATE");
-
-            try
-            {
-                var restoreSql = $"RESTORE DATABASE [{_databaseName}] FROM DISK = @path WITH REPLACE";
-                await using var restoreCmd = new SqlCommand(restoreSql, connection) { CommandTimeout = 120 };
-                restoreCmd.Parameters.AddWithValue("@path", containerFilePath);
-                await restoreCmd.ExecuteNonQueryAsync();
-            }
-            finally
-            {
-                await ExecuteNonQueryAsync(connection, $"ALTER DATABASE [{_databaseName}] SET MULTI_USER");
-            }
+            RunDockerCommand(
+                "exec", "-e", $"PGPASSWORD={_dbPassword}", _containerName,
+                "pg_restore", "-h", "127.0.0.1", "-U", _dbUser, "-d", _databaseName,
+                "--clean", "--if-exists", containerFilePath);
+        }
+        finally
+        {
+            RunDockerCommand("exec", _containerName, "rm", "-f", containerFilePath);
         }
 
-        RunDockerCommand("exec", _containerName, "rm", "-f", containerFilePath);
-
-        // Force ADO.NET/EF Core to drop pooled connections opened before the restore
-        SqlConnection.ClearAllPools();
+        NpgsqlConnection.ClearAllPools();
     }
 
     public Task DeleteBackupAsync(string fileName)
@@ -150,15 +142,19 @@ public class BackupService : IBackupService
         }
     }
 
-    private string BuildMasterConnectionString()
+    private async Task TerminateActiveConnectionsAsync()
     {
-        var builder = new SqlConnectionStringBuilder(_connectionString) { InitialCatalog = "master" };
-        return builder.ConnectionString;
-    }
+        var builder = new NpgsqlConnectionStringBuilder(_connectionString) { Database = "postgres" };
+        await using var connection = new NpgsqlConnection(builder.ConnectionString);
+        await connection.OpenAsync();
 
-    private static async Task ExecuteNonQueryAsync(SqlConnection connection, string sql)
-    {
-        await using var command = new SqlCommand(sql, connection) { CommandTimeout = 60 };
+        const string sql = @"
+            SELECT pg_terminate_backend(pid)
+            FROM pg_stat_activity
+            WHERE datname = @dbName AND pid <> pg_backend_pid();";
+
+        await using var command = new NpgsqlCommand(sql, connection);
+        command.Parameters.AddWithValue("dbName", _databaseName);
         await command.ExecuteNonQueryAsync();
     }
 
@@ -186,9 +182,10 @@ public class BackupService : IBackupService
 
         if (process.ExitCode != 0)
         {
+            var safeArgs = string.Join(' ', arguments.Select(a => a.StartsWith("PGPASSWORD=") ? "PGPASSWORD=***" : a));
             _logger.LogError("docker {Args} failed with exit code {Code}. stderr: {StdErr}",
-                string.Join(' ', arguments), process.ExitCode, stderr);
-            throw new InvalidOperationException($"Docker command failed: docker {string.Join(' ', arguments)}. {stderr}");
+                safeArgs, process.ExitCode, stderr);
+            throw new InvalidOperationException($"Docker command failed: docker {safeArgs}. {stderr}");
         }
     }
 }
