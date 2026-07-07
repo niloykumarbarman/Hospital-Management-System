@@ -19,7 +19,10 @@ import { InvoiceDto } from "@/types/invoice";
 export default function ReportsPage() {
   const [patients, setPatients] = useState<PatientDto[]>([]);
   const [invoices, setInvoices] = useState<InvoiceDto[]>([]);
-  const [optionsLoading, setOptionsLoading] = useState(true);
+  const [patientsLoading, setPatientsLoading] = useState(true);
+  const [invoicesLoading, setInvoicesLoading] = useState(true);
+  const [patientsRestricted, setPatientsRestricted] = useState(false);
+  const [invoicesRestricted, setInvoicesRestricted] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const [startDate, setStartDate] = useState("");
@@ -31,20 +34,33 @@ export default function ReportsPage() {
 
   useEffect(() => {
     let cancelled = false;
-    setOptionsLoading(true);
-    Promise.all([getPatients(), getInvoices()])
-      .then(([p, i]) => {
-        if (!cancelled) {
-          setPatients(p);
-          setInvoices(i);
-        }
+
+    // Patients and invoices are loaded independently: some roles (e.g.
+    // Pharmacist, LabTechnician) aren't authorized to view invoices, and some
+    // roles aren't authorized to view patients either. One restricted
+    // resource shouldn't block the reports that don't need it.
+    getPatients()
+      .then((p) => {
+        if (!cancelled) setPatients(p);
       })
       .catch(() => {
-        if (!cancelled) setError("Failed to load patients/invoices for report options.");
+        if (!cancelled) setPatientsRestricted(true);
       })
       .finally(() => {
-        if (!cancelled) setOptionsLoading(false);
+        if (!cancelled) setPatientsLoading(false);
       });
+
+    getInvoices()
+      .then((i) => {
+        if (!cancelled) setInvoices(i);
+      })
+      .catch(() => {
+        if (!cancelled) setInvoicesRestricted(true);
+      })
+      .finally(() => {
+        if (!cancelled) setInvoicesLoading(false);
+      });
+
     return () => {
       cancelled = true;
     };
@@ -162,33 +178,41 @@ export default function ReportsPage() {
               </p>
             </div>
           </div>
-          <Select
-            value={selectedInvoiceId}
-            onChange={(e) => setSelectedInvoiceId(e.target.value)}
-            disabled={optionsLoading}
-          >
-            <option value="">
-              {optionsLoading ? "Loading invoices..." : "Select an invoice"}
-            </option>
-            {invoices.map((inv) => (
-              <option key={inv.id} value={inv.id}>
-                {inv.invoiceNumber} — {inv.patientName}
-              </option>
-            ))}
-          </Select>
-          <Button
-            onClick={() => {
-              const invoice = invoices.find((i) => i.id === selectedInvoiceId);
-              if (!invoice) return;
-              handleDownload("invoice", () =>
-                downloadInvoicePdf(invoice.id, invoice.invoiceNumber)
-              );
-            }}
-            disabled={!selectedInvoiceId || downloading === "invoice"}
-          >
-            <Download size={15} className="mr-2" />
-            {downloading === "invoice" ? "Generating..." : "Download PDF"}
-          </Button>
+          {invoicesRestricted ? (
+            <p className="text-xs text-[var(--foreground-muted)] py-2">
+              You don&apos;t have permission to view invoices.
+            </p>
+          ) : (
+            <>
+              <Select
+                value={selectedInvoiceId}
+                onChange={(e) => setSelectedInvoiceId(e.target.value)}
+                disabled={invoicesLoading}
+              >
+                <option value="">
+                  {invoicesLoading ? "Loading invoices..." : "Select an invoice"}
+                </option>
+                {invoices.map((inv) => (
+                  <option key={inv.id} value={inv.id}>
+                    {inv.invoiceNumber} — {inv.patientName}
+                  </option>
+                ))}
+              </Select>
+              <Button
+                onClick={() => {
+                  const invoice = invoices.find((i) => i.id === selectedInvoiceId);
+                  if (!invoice) return;
+                  handleDownload("invoice", () =>
+                    downloadInvoicePdf(invoice.id, invoice.invoiceNumber)
+                  );
+                }}
+                disabled={!selectedInvoiceId || downloading === "invoice"}
+              >
+                <Download size={15} className="mr-2" />
+                {downloading === "invoice" ? "Generating..." : "Download PDF"}
+              </Button>
+            </>
+          )}
         </GlassCard>
 
         <GlassCard className="flex flex-col gap-4 animate-fade-in-up" style={{ animationDelay: "160ms" }}>
@@ -203,33 +227,41 @@ export default function ReportsPage() {
               </p>
             </div>
           </div>
-          <Select
-            value={selectedPatientId}
-            onChange={(e) => setSelectedPatientId(e.target.value)}
-            disabled={optionsLoading}
-          >
-            <option value="">
-              {optionsLoading ? "Loading patients..." : "Select a patient"}
-            </option>
-            {patients.map((p) => (
-              <option key={p.id} value={p.id}>
-                {p.fullName} ({p.patientCode})
-              </option>
-            ))}
-          </Select>
-          <Button
-            onClick={() => {
-              const patient = patients.find((p) => p.id === selectedPatientId);
-              if (!patient) return;
-              handleDownload("medical-history", () =>
-                downloadPatientMedicalHistoryPdf(patient.id, patient.fullName)
-              );
-            }}
-            disabled={!selectedPatientId || downloading === "medical-history"}
-          >
-            <Download size={15} className="mr-2" />
-            {downloading === "medical-history" ? "Generating..." : "Download PDF"}
-          </Button>
+          {patientsRestricted ? (
+            <p className="text-xs text-[var(--foreground-muted)] py-2">
+              You don&apos;t have permission to view patients.
+            </p>
+          ) : (
+            <>
+              <Select
+                value={selectedPatientId}
+                onChange={(e) => setSelectedPatientId(e.target.value)}
+                disabled={patientsLoading}
+              >
+                <option value="">
+                  {patientsLoading ? "Loading patients..." : "Select a patient"}
+                </option>
+                {patients.map((p) => (
+                  <option key={p.id} value={p.id}>
+                    {p.fullName} ({p.patientCode})
+                  </option>
+                ))}
+              </Select>
+              <Button
+                onClick={() => {
+                  const patient = patients.find((p) => p.id === selectedPatientId);
+                  if (!patient) return;
+                  handleDownload("medical-history", () =>
+                    downloadPatientMedicalHistoryPdf(patient.id, patient.fullName)
+                  );
+                }}
+                disabled={!selectedPatientId || downloading === "medical-history"}
+              >
+                <Download size={15} className="mr-2" />
+                {downloading === "medical-history" ? "Generating..." : "Download PDF"}
+              </Button>
+            </>
+          )}
         </GlassCard>
       </div>
     </div>
