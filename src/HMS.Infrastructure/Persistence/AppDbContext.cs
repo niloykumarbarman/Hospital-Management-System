@@ -5,6 +5,7 @@ using HMS.Domain.Entities;
 using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.ChangeTracking;
+using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 namespace HMS.Infrastructure.Persistence;
 
@@ -55,6 +56,32 @@ public class AppDbContext : DbContext
         modelBuilder.Entity<Invoice>().HasQueryFilter(e => !e.IsDeleted);
         modelBuilder.Entity<InvoiceItem>().HasQueryFilter(e => !e.IsDeleted && !e.Invoice.IsDeleted);
         modelBuilder.Entity<StockAdjustment>().HasQueryFilter(e => !e.IsDeleted);
+
+        // Npgsql only accepts DateTime.Kind=Utc for "timestamp with time zone" columns.
+        // JSON-deserialized DateTimes (e.g. from API request bodies) come in as Kind=Unspecified,
+        // which throws at save time. This converter transparently treats every DateTime/DateTime?
+        // property across all entities as UTC, both when writing to and reading from the database.
+        var utcConverter = new ValueConverter<DateTime, DateTime>(
+            v => v.Kind == DateTimeKind.Utc ? v : DateTime.SpecifyKind(v, DateTimeKind.Utc),
+            v => DateTime.SpecifyKind(v, DateTimeKind.Utc));
+        var nullableUtcConverter = new ValueConverter<DateTime?, DateTime?>(
+            v => v.HasValue ? (v.Value.Kind == DateTimeKind.Utc ? v.Value : DateTime.SpecifyKind(v.Value, DateTimeKind.Utc)) : v,
+            v => v.HasValue ? DateTime.SpecifyKind(v.Value, DateTimeKind.Utc) : v);
+
+        foreach (var entityType in modelBuilder.Model.GetEntityTypes())
+        {
+            foreach (var property in entityType.GetProperties())
+            {
+                if (property.ClrType == typeof(DateTime))
+                {
+                    property.SetValueConverter(utcConverter);
+                }
+                else if (property.ClrType == typeof(DateTime?))
+                {
+                    property.SetValueConverter(nullableUtcConverter);
+                }
+            }
+        }
 
         base.OnModelCreating(modelBuilder);
     }
