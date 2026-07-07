@@ -1,5 +1,6 @@
 import Cookies from "js-cookie";
-import { AuthResponse, AuthUser } from "@/types/auth";
+import api from "./api";
+import { AuthResponse, AuthUser, RegisterRequest } from "@/types/auth";
 
 const TOKEN_KEY = "hms_token";
 const USER_KEY = "hms_user";
@@ -40,4 +41,14 @@ export function isAuthenticated(): boolean {
 export function clearAuth() {
   Cookies.remove(TOKEN_KEY, { path: "/" });
   localStorage.removeItem(USER_KEY);
+}
+
+// Creates a new user account (e.g. so an Admin can create a Doctor-role user
+// before assigning a Doctor profile to them). Intentionally does NOT call
+// saveAuth() — the token in the response belongs to the newly created user,
+// not the Admin performing the action, so the Admin's own session must stay
+// untouched.
+export async function registerUser(dto: RegisterRequest): Promise<AuthResponse> {
+  const res = await api.post<AuthResponse>("/auth/register", dto);
+  return res.data;
 }
