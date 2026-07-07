@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { clsx } from "clsx";
 import { NAV_ITEMS } from "./nav-items";
+import { useAuth } from "@/context/AuthContext";
 
 export default function Sidebar({
   onNavigate,
@@ -11,6 +12,11 @@ export default function Sidebar({
   onNavigate?: () => void;
 }) {
   const pathname = usePathname();
+  const { user } = useAuth();
+
+  const items = NAV_ITEMS.filter(
+    (item) => !item.roles || item.roles.includes(user?.role ?? "")
+  );
 
   return (
     <div className="flex flex-col h-full">
@@ -21,7 +27,7 @@ export default function Sidebar({
       </div>
 
       <nav className="flex-1 overflow-y-auto py-4 px-3 flex flex-col gap-1">
-        {NAV_ITEMS.map(({ label, href, icon: Icon }, index) => {
+        {items.map(({ label, href, icon: Icon }, index) => {
           const isActive = pathname === href || pathname.startsWith(`${href}/`);
           return (
             <Link

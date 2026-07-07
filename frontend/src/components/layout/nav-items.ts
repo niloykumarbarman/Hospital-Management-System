@@ -9,6 +9,7 @@ import {
   Pill,
   Receipt,
   BarChart3,
+  DatabaseBackup,
   type LucideIcon,
 } from "lucide-react";
 
@@ -16,6 +17,7 @@ export interface NavItem {
   label: string;
   href: string;
   icon: LucideIcon;
+  roles?: string[];
 }
 
 export const NAV_ITEMS: NavItem[] = [
@@ -29,4 +31,5 @@ export const NAV_ITEMS: NavItem[] = [
   { label: "Medicine", href: "/medicines", icon: Pill },
   { label: "Invoice", href: "/invoices", icon: Receipt },
   { label: "Report", href: "/reports", icon: BarChart3 },
+  { label: "Backup", href: "/backup", icon: DatabaseBackup, roles: ["Admin"] },
 ];
