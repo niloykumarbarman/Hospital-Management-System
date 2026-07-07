@@ -29,12 +29,18 @@ public class BackupService : IBackupService
             ?? throw new InvalidOperationException("DefaultConnection is not configured.");
         _hostBackupDirectory = configuration["Backup:HostBackupDirectory"]
             ?? throw new InvalidOperationException("Backup:HostBackupDirectory is not configured.");
-        _databaseName = configuration["Backup:DatabaseName"] ?? "HmsDb";
         _logger = logger;
 
         var connBuilder = new NpgsqlConnectionStringBuilder(_connectionString);
         _dbHost = connBuilder.Host ?? "localhost";
         _dbPort = connBuilder.Port != 0 ? connBuilder.Port : 5432;
+        // The connection string is the single source of truth for which database to back up.
+        // Backup:DatabaseName is only an optional override; previously it silently defaulted
+        // to "HmsDb" even when the connection string pointed at a differently-named database
+        // (e.g. Render's managed Postgres), which made pg_dump fail with "database does not exist".
+        _databaseName = configuration["Backup:DatabaseName"]
+            ?? connBuilder.Database
+            ?? throw new InvalidOperationException("Could not determine the database name from DefaultConnection.");
         _dbUser = connBuilder.Username ?? "postgres";
         _dbPassword = connBuilder.Password ?? string.Empty;
 
