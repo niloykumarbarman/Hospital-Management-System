@@ -22,10 +22,10 @@ import { PaymentStatus } from "@/types/invoice";
 import { AppointmentDto, APPOINTMENT_STATUS_LABELS, AppointmentStatus } from "@/types/appointment";
 
 interface StatValues {
-  patients: number;
-  doctors: number;
-  todaysAppointments: number;
-  pendingInvoices: number;
+  patients: number | null;
+  doctors: number | null;
+  todaysAppointments: number | null;
+  pendingInvoices: number | null;
 }
 
 const STAT_META = [
@@ -69,41 +69,58 @@ export default function DashboardPage() {
     let isMounted = true;
 
     async function loadStats() {
-      try {
-        const [patients, doctors, appointments, invoices] = await Promise.all([
-          getPatients(),
-          getDoctors(),
-          getAppointments(),
-          getInvoices(),
-        ]);
+      // Use allSettled instead of all: some roles (e.g. Doctor, Nurse) are not
+      // authorized to view certain resources like invoices (403 Forbidden).
+      // One restricted endpoint should not blank out the stats the user IS
+      // allowed to see.
+      const [patientsRes, doctorsRes, appointmentsRes, invoicesRes] = await Promise.allSettled([
+        getPatients(),
+        getDoctors(),
+        getAppointments(),
+        getInvoices(),
+      ]);
 
-        if (!isMounted) return;
+      if (!isMounted) return;
 
-        const today = new Date().toISOString().slice(0, 10);
-        const todaysAppointments = appointments.filter(
-          (a) => a.appointmentDate?.slice(0, 10) === today
-        ).length;
-        const pendingInvoices = invoices.filter(
-          (i) =>
-            i.paymentStatus === PaymentStatus.Unpaid ||
-            i.paymentStatus === PaymentStatus.PartiallyPaid
-        ).length;
+      const patients = patientsRes.status === "fulfilled" ? patientsRes.value : null;
+      const doctors = doctorsRes.status === "fulfilled" ? doctorsRes.value : null;
+      const appointments = appointmentsRes.status === "fulfilled" ? appointmentsRes.value : null;
+      const invoices = invoicesRes.status === "fulfilled" ? invoicesRes.value : null;
 
-        setStats({
-          patients: patients.length,
-          doctors: doctors.length,
-          todaysAppointments,
-          pendingInvoices,
-        });
+      const today = new Date().toISOString().slice(0, 10);
+      const todaysAppointments = appointments
+        ? appointments.filter((a) => a.appointmentDate?.slice(0, 10) === today).length
+        : null;
+      const pendingInvoices = invoices
+        ? invoices.filter(
+            (i) =>
+              i.paymentStatus === PaymentStatus.Unpaid ||
+              i.paymentStatus === PaymentStatus.PartiallyPaid
+          ).length
+        : null;
 
+      setStats({
+        patients: patients ? patients.length : null,
+        doctors: doctors ? doctors.length : null,
+        todaysAppointments,
+        pendingInvoices,
+      });
+
+      if (appointments) {
         const sorted = [...appointments].sort((a, b) => {
           const dateCompare = b.appointmentDate.localeCompare(a.appointmentDate);
           return dateCompare !== 0 ? dateCompare : b.appointmentTime.localeCompare(a.appointmentTime);
         });
         setRecentAppointments(sorted.slice(0, 5));
-      } catch (err) {
-        if (isMounted) setError("Failed to load dashboard stats");
       }
+
+      // Only show the error banner if every single stat failed to load (e.g. a
+      // genuine network problem), not when a role is simply restricted from
+      // one resource — that case is handled per-card below instead.
+      const allFailed = [patientsRes, doctorsRes, appointmentsRes, invoicesRes].every(
+        (r) => r.status === "rejected"
+      );
+      if (allFailed) setError("Failed to load dashboard stats");
     }
 
     loadStats();
@@ -136,7 +153,7 @@ export default function DashboardPage() {
               <div>
                 <p className="text-sm text-[var(--foreground-muted)]">{label}</p>
                 <p className="text-2xl font-bold mt-1 text-[var(--foreground)]">
-                  {stats ? stats[key] : "—"}
+                  {stats && stats[key] !== null ? stats[key] : "—"}
                 </p>
               </div>
               <div
