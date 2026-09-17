@@ -20,8 +20,8 @@ Log in with any of the roles below on the live frontend to explore role-specific
 
 | Role | Email | Password |
 |---|---|---|
-| Admin | *(ask for the Admin demo account)* | |
-| Doctor | `nilo@gmail.com` | *(shared on request)* |
+| Admin | `admin@hms.com` | `Admin@123` |
+| Doctor | `nilo@gmail.com` | `Demo@1234` |
 | Receptionist | `receptionist.demo@hms.com` | `Demo@1234` |
 | Pharmacist | `pharmacist.demo@hms.com` | `Demo@1234` |
 | Lab Technician | `labtech.demo@hms.com` | `Demo@1234` |
@@ -51,8 +51,8 @@ Log in with any of the roles below on the live frontend to explore role-specific
 
 | Role | Email | Password |
 |---|---|---|
-| Admin | *(ask for the Admin demo account)* | |
-| Doctor | `nilo@gmail.com` | *(shared on request)* |
+| Admin | `admin@hms.com` | `Admin@123` |
+| Doctor | `nilo@gmail.com` | `Demo@1234` |
 | Receptionist | `receptionist.demo@hms.com` | `Demo@1234` |
 | Pharmacist | `pharmacist.demo@hms.com` | `Demo@1234` |
 | Lab Technician | `labtech.demo@hms.com` | `Demo@1234` |
