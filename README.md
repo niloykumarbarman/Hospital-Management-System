@@ -89,6 +89,8 @@ The backend follows Clean Architecture with four layers:
 
 Dependency flow: API -> Application -> Domain, with Infrastructure implementing interfaces defined in Application/Domain.
 
+![Architecture diagram](docs/architecture.svg)
+
 The frontend is a standard Next.js App Router project, with a consistent pattern per module:
 
     src/types/{module}.ts                              DTOs, enums
