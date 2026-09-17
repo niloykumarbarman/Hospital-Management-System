@@ -45,37 +45,6 @@ Access is enforced on both the API (via role-authorization attributes on control
 
 Designing and testing this matrix end-to-end — across API authorization, sidebar visibility, and dashboard/report data loading — was a deliberate part of this project, aimed at reflecting how access control works in a real clinical setting.
 
-## Demo Credentials
-
-Log in with any of the roles below on the live frontend to explore role-specific permissions:
-
-| Role | Email | Password |
-|---|---|---|
-| Admin | `admin@hms.com` | `Admin@123` |
-| Doctor | `nilo@gmail.com` | `Demo@1234` |
-| Receptionist | `receptionist.demo@hms.com` | `Demo@1234` |
-| Pharmacist | `pharmacist.demo@hms.com` | `Demo@1234` |
-| Lab Technician | `labtech.demo@hms.com` | `Demo@1234` |
-| Nurse | `nurse.demo@hms.com` | `Demo@1234` |
-
-## Role-Based Access Control
-
-Access is enforced on both the API (via role-authorization attributes on controllers) and the frontend (menu items and dashboard/report cards are filtered per role). The current permission matrix:
-
-| Resource | Allowed Roles |
-|---|---|
-| Patients | Admin, Doctor, Receptionist, Nurse |
-| Doctors | All authenticated users |
-| Appointments | Admin, Doctor, Receptionist, Nurse |
-| Medical Records | Admin, Doctor, Nurse |
-| Prescriptions | Admin, Doctor, Nurse, Pharmacist |
-| Lab Tests | Admin, Doctor, Lab Technician, Nurse |
-| Medicines | All authenticated users |
-| Invoices | Admin, Receptionist |
-| Backups | Admin only |
-
-Designing and testing this matrix end-to-end — across API authorization, sidebar visibility, and dashboard/report data loading — was a deliberate part of this project, aimed at reflecting how access control works in a real clinical setting.
-
 ## Screenshots
 
 > _Add screenshots here — e.g. `docs/screenshots/dashboard.png`_
