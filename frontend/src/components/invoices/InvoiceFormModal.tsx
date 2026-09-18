@@ -147,7 +147,7 @@ export default function InvoiceFormModal({
   return (
     <Modal open={open} onClose={onClose} title="Create Invoice">
       <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <Select
             label="Patient"
             value={form.patientId}
@@ -224,7 +224,7 @@ export default function InvoiceFormModal({
                 error={itemErrors[i]?.description}
               />
 
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <Input
                   label="Quantity"
                   type="number"

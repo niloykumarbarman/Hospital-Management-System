@@ -196,7 +196,7 @@ export default function PrescriptionFormModal({
       title={isEdit ? "Edit Prescription" : "Add Prescription"}
     >
       <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <Select
             label="Patient"
             value={form.patientId}
@@ -299,7 +299,7 @@ export default function PrescriptionFormModal({
                 ))}
               </Select>
 
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <Input
                   label="Dosage"
                   placeholder="e.g. 500mg"

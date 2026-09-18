@@ -163,7 +163,7 @@ export default function AppointmentFormModal({
             </p>
           </div>
         ) : (
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <Select
               label="Patient"
               value={form.patientId}
@@ -196,7 +196,7 @@ export default function AppointmentFormModal({
           </div>
         )}
 
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <Input
             label="Date"
             type="date"

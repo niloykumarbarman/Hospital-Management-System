@@ -294,7 +294,7 @@ export default function DoctorFormModal({
           </div>
         )}
 
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <Input
             label="Specialization"
             value={form.specialization}
@@ -315,7 +315,7 @@ export default function DoctorFormModal({
           onChange={(e) => setForm({ ...form, licenseNumber: e.target.value })}
         />
 
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <Input
             label="Consultation Fee"
             type="number"

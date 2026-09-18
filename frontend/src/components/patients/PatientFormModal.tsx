@@ -113,7 +113,7 @@ export default function PatientFormModal({
           error={errors.fullName}
         />
 
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <Select
             label="Gender"
             value={form.gender}
@@ -133,7 +133,7 @@ export default function PatientFormModal({
           />
         </div>
 
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <Input
             label="Phone Number"
             value={form.phoneNumber}
@@ -154,7 +154,7 @@ export default function PatientFormModal({
           onChange={(e) => setForm({ ...form, address: e.target.value })}
         />
 
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <Input
             label="Blood Group"
             value={form.bloodGroup}

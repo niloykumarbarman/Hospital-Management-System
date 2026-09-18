@@ -36,7 +36,7 @@ export default function Modal({ open, onClose, title, children, className }: Mod
     >
       <div
         className={clsx(
-          "glass-card w-full max-w-lg p-6 animate-fade-in-up",
+          "glass-card w-full max-w-lg max-h-[90vh] overflow-y-auto p-4 sm:p-6 animate-fade-in-up",
           className
         )}
         style={{ animationDuration: "0.25s" }}

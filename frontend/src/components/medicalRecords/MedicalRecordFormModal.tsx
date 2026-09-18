@@ -155,7 +155,7 @@ export default function MedicalRecordFormModal({
       title={isEdit ? "Edit Medical Record" : "Add Medical Record"}
     >
       <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <Select
             label="Patient"
             value={form.patientId}
@@ -191,7 +191,7 @@ export default function MedicalRecordFormModal({
           </Select>
         </div>
 
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <Select
             label="Admission Type"
             value={form.admissionType}

@@ -183,7 +183,7 @@ export default function LabTestFormModal({
           </Select>
         )}
 
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <Input
             label="Test Name"
             placeholder="e.g. Complete Blood Count"
@@ -219,7 +219,7 @@ export default function LabTestFormModal({
             <div className="h-px bg-[var(--border)] my-1" />
             <p className="text-sm font-medium text-[var(--foreground)]">Test Result</p>
 
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <Input
                 label="Result Value"
                 value={form.resultValue}

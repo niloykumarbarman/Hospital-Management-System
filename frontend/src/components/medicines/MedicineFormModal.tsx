@@ -131,7 +131,7 @@ export default function MedicineFormModal({
       title={isEdit ? "Edit Medicine" : "Add Medicine"}
     >
       <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <Input
             label="Name"
             value={form.name}
@@ -145,7 +145,7 @@ export default function MedicineFormModal({
           />
         </div>
 
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <Input
             label="Manufacturer"
             value={form.manufacturer}
@@ -160,7 +160,7 @@ export default function MedicineFormModal({
           />
         </div>
 
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <Input
             label="Unit Price"
             type="number"
@@ -182,7 +182,7 @@ export default function MedicineFormModal({
           />
         </div>
 
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           {!isEdit && (
             <Input
               label="Initial Stock Quantity"
