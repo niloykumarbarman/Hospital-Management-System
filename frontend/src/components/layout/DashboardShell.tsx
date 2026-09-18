@@ -27,7 +27,7 @@ export default function DashboardShell({ children }: { children: ReactNode }) {
         />
         <div
           className={clsx(
-            "absolute left-0 top-0 h-full w-64 bg-[var(--background)] border-r border-[var(--border)] transition-transform duration-300 ease-out",
+            "absolute left-0 top-0 h-full w-64 bg-[#0a0e14] border-r border-[var(--border)] transition-transform duration-300 ease-out",
             mobileOpen ? "translate-x-0" : "-translate-x-full"
           )}
         >
